@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1770746010979,
+      "tag": "0000_blue_sway",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770746466688,
+      "tag": "0001_perfect_expediter",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770766633032,
+      "tag": "0002_narrow_stone_men",
+      "breakpoints": true
+    }
+  ]
+}
