@@ -12,7 +12,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Path } from 'react-native-svg';
 import { CATEGORIES, getAffirmationsByCategory } from '../data/affirmations';
 import { useStore } from '../store/useStore';
-import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../constants/theme';
+import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 import { RootStackParamList, CategoryInfo } from '../types';
 
 interface BrowseScreenProps {
@@ -129,8 +129,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
+    borderRadius: BORDER_RADIUS.xl,
     marginBottom: SPACING.sm,
+    ...SHADOWS.card,
   },
   categoryLeft: {
     flexDirection: 'row',

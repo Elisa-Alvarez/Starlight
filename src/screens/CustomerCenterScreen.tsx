@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   proBadgeText: {
     fontSize: FONT_SIZES.xs,
     fontWeight: '700',
-    color: '#3D3D3D',
+    color: '#FFFFFF',
   },
   divider: {
     height: 1,

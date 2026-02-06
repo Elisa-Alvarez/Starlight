@@ -222,7 +222,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               disabled={isLoading}
             >
               {isLoading ? (
-                <ActivityIndicator color="#3D3D3D" />
+                <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={styles.submitButtonText}>
                   {isSignUp ? 'Sign Up' : 'Sign In'}
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: FONT_SIZES.md,
     fontWeight: '600',
-    color: '#3D3D3D',
+    color: '#FFFFFF',
   },
   buttonDisabled: {
     opacity: 0.6,

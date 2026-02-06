@@ -11,6 +11,7 @@ interface AppState {
   notificationTimes: NotificationTime[];
   darkMode: boolean;
   onboardingCompleted: boolean;
+  selectedTheme: string;
 
   // Current affirmation
   currentAffirmation: Affirmation | null;
@@ -21,6 +22,7 @@ interface AppState {
   setNotificationTimes: (times: NotificationTime[]) => void;
   toggleNotificationTime: (id: string) => void;
   setDarkMode: (enabled: boolean) => void;
+  setSelectedTheme: (themeId: string) => void;
   completeOnboarding: () => void;
   getNewAffirmation: () => void;
   initializeAffirmation: () => void;
@@ -34,6 +36,7 @@ export const useStore = create<AppState>()(
       notificationTimes: DEFAULT_NOTIFICATION_TIMES,
       darkMode: false,
       onboardingCompleted: false,
+      selectedTheme: 'default',
       currentAffirmation: null,
 
       // Actions
@@ -72,6 +75,10 @@ export const useStore = create<AppState>()(
         set({ darkMode: enabled });
       },
 
+      setSelectedTheme: (themeId) => {
+        set({ selectedTheme: themeId });
+      },
+
       completeOnboarding: () => {
         set({ onboardingCompleted: true });
       },
@@ -98,6 +105,7 @@ export const useStore = create<AppState>()(
         notificationTimes: state.notificationTimes,
         darkMode: state.darkMode,
         onboardingCompleted: state.onboardingCompleted,
+        selectedTheme: state.selectedTheme,
       }),
     }
   )

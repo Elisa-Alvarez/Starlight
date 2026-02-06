@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../auth/middleware.js';
-import { getUserProfile, updateUserProfile, deleteUser } from './service.js';
+import { getUserProfile, updateUserProfile, deleteUser, getUserStreak } from './service.js';
 import { updateUserSchema } from './schemas.js';
 
 export async function userRoutes(app: FastifyInstance) {
@@ -23,6 +23,12 @@ export async function userRoutes(app: FastifyInstance) {
     const input = updateUserSchema.parse({ selectedCategories: categories });
     const profile = await updateUserProfile(request.user!.id, input);
     return { success: true, data: profile };
+  });
+
+  // Get streak data
+  app.get('/me/streak', { preHandler: [requireAuth] }, async (request) => {
+    const streak = await getUserStreak(request.user!.id);
+    return { success: true, data: streak };
   });
 
   // Delete account

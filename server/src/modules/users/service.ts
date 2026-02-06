@@ -1,7 +1,8 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, desc } from 'drizzle-orm';
 import { db } from '../../lib/db.js';
 import { supabaseAdmin } from '../../lib/supabase.js';
 import { userProfiles } from '../../db/schema/users.js';
+import { affirmationViews } from '../../db/schema/views.js';
 import { APP_CONSTANTS } from '../../config/constants.js';
 import { NotFoundError } from '../../middleware/error-handler.js';
 import type { Category } from '../../types/index.js';
@@ -96,6 +97,68 @@ export async function incrementDailyCount(userId: string) {
 export async function checkCanViewAffirmation(userId: string): Promise<boolean> {
   const profile = await getUserProfile(userId);
   return profile.canViewMoreAffirmations;
+}
+
+export async function getUserStreak(userId: string) {
+  // Get all distinct view dates for the user
+  const rows = await db
+    .select({
+      viewDate: sql<string>`DATE(${affirmationViews.viewedAt})`.as('view_date'),
+    })
+    .from(affirmationViews)
+    .where(eq(affirmationViews.userId, userId))
+    .groupBy(sql`DATE(${affirmationViews.viewedAt})`)
+    .orderBy(desc(sql`DATE(${affirmationViews.viewedAt})`));
+
+  const viewDates = rows.map((r) => r.viewDate);
+
+  if (viewDates.length === 0) {
+    return { currentStreak: 0, longestStreak: 0, viewDates: [] };
+  }
+
+  // Calculate streaks
+  let currentStreak = 0;
+  let longestStreak = 0;
+  let streak = 1;
+
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+  // Current streak: must include today or yesterday
+  if (viewDates[0] === today || viewDates[0] === yesterday) {
+    currentStreak = 1;
+    for (let i = 1; i < viewDates.length; i++) {
+      const curr = new Date(viewDates[i - 1]);
+      const prev = new Date(viewDates[i]);
+      const diffDays = Math.round((curr.getTime() - prev.getTime()) / 86400000);
+      if (diffDays === 1) {
+        currentStreak++;
+      } else {
+        break;
+      }
+    }
+  }
+
+  // Longest streak
+  longestStreak = 1;
+  streak = 1;
+  for (let i = 1; i < viewDates.length; i++) {
+    const curr = new Date(viewDates[i - 1]);
+    const prev = new Date(viewDates[i]);
+    const diffDays = Math.round((curr.getTime() - prev.getTime()) / 86400000);
+    if (diffDays === 1) {
+      streak++;
+      longestStreak = Math.max(longestStreak, streak);
+    } else {
+      streak = 1;
+    }
+  }
+
+  return {
+    currentStreak,
+    longestStreak: Math.max(longestStreak, currentStreak),
+    viewDates,
+  };
 }
 
 export async function deleteUser(userId: string) {

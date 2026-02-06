@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,20 +6,41 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Svg, { Path } from 'react-native-svg';
 import { StarMascot } from '../components';
 import { CATEGORIES } from '../data/affirmations';
 import { useStore } from '../store/useStore';
+import { useSubscriptionStore } from '../store/subscriptionStore';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../constants/theme';
 import { RootStackParamList, Category } from '../types';
+import {
+  formatPrice,
+  getSubscriptionPeriod,
+  calculateYearlySavings,
+} from '../services/revenuecat';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface OnboardingScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;
 }
+
+const CheckIcon = ({ color }: { color: string }) => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M20 6L9 17l-5-5"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
@@ -30,8 +51,31 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
     toggleNotificationTime,
     completeOnboarding
   } = useStore();
+  const {
+    isPro,
+    isLoading: subLoading,
+    offerings,
+    error: subError,
+    purchase,
+    restore,
+    clearError: clearSubError,
+    fetchOfferings,
+  } = useSubscriptionStore();
   const [step, setStep] = useState(0);
+  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const colors = COLORS.light;
+
+  useEffect(() => {
+    if (step === 3 && !offerings) {
+      fetchOfferings();
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (subError) {
+      Alert.alert('Error', subError, [{ text: 'OK', onPress: clearSubError }]);
+    }
+  }, [subError]);
 
   const handleComplete = () => {
     completeOnboarding();
@@ -144,12 +188,184 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
 
       <TouchableOpacity
         style={styles.primaryButton}
-        onPress={handleComplete}
+        onPress={() => setStep(3)}
       >
-        <Text style={styles.primaryButtonText}>I'm ready ✨</Text>
+        <Text style={styles.primaryButtonText}>Continue</Text>
       </TouchableOpacity>
     </ScrollView>
   );
+
+  const renderPaywall = () => {
+    const packages = offerings?.availablePackages || [];
+    const monthlyPkg = packages.find(p =>
+      p.identifier.toLowerCase().includes('monthly') || p.packageType === 'MONTHLY'
+    );
+    const yearlyPkg = packages.find(p =>
+      p.identifier.toLowerCase().includes('yearly') ||
+      p.identifier.toLowerCase().includes('annual') ||
+      p.packageType === 'ANNUAL'
+    );
+    const lifetimePkg = packages.find(p =>
+      p.identifier.toLowerCase().includes('lifetime') || p.packageType === 'LIFETIME'
+    );
+    const savings = calculateYearlySavings(monthlyPkg, yearlyPkg);
+
+    const handlePurchase = async () => {
+      if (!selectedPackage) return;
+      const pkg = packages.find(p => p.identifier === selectedPackage);
+      if (!pkg) return;
+      const success = await purchase(pkg);
+      if (success) {
+        handleComplete();
+      }
+    };
+
+    const handleRestore = async () => {
+      const success = await restore();
+      if (success) {
+        Alert.alert('Success', 'Your purchases have been restored!', [
+          { text: 'OK', onPress: handleComplete },
+        ]);
+      }
+    };
+
+    const proFeatures = [
+      'Unlimited affirmations',
+      'All categories unlocked',
+      'Custom notification schedules',
+      'Widget customization',
+      'No ads, ever',
+    ];
+
+    return (
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.paywallHero}>
+          <StarMascot size={80} />
+          <Text style={[styles.stepTitle, { color: colors.text, textAlign: 'center' }]}>
+            Unlock Starlight Pro
+          </Text>
+          <Text style={[styles.stepDescription, { color: colors.textSecondary, textAlign: 'center' }]}>
+            Support the app & get unlimited access
+          </Text>
+        </View>
+
+        <View style={[styles.featuresCard, { backgroundColor: colors.card }]}>
+          {proFeatures.map((feature, index) => (
+            <View key={index} style={styles.featureRow}>
+              <View style={styles.checkCircle}>
+                <CheckIcon color={COLORS.primary} />
+              </View>
+              <Text style={[styles.featureText, { color: colors.text }]}>{feature}</Text>
+            </View>
+          ))}
+        </View>
+
+        {subLoading && !packages.length ? (
+          <ActivityIndicator size="large" color={COLORS.primary} style={{ marginVertical: SPACING.xl }} />
+        ) : (
+          <View style={styles.packagesContainer}>
+            {yearlyPkg && (
+              <TouchableOpacity
+                style={[
+                  styles.packageCard,
+                  { backgroundColor: colors.card },
+                  selectedPackage === yearlyPkg.identifier && styles.packageCardSelected,
+                ]}
+                onPress={() => setSelectedPackage(yearlyPkg.identifier)}
+              >
+                {savings && (
+                  <View style={styles.savingsBadge}>
+                    <Text style={styles.savingsText}>Save {savings}%</Text>
+                  </View>
+                )}
+                <Text style={[styles.packageTitle, { color: colors.text }]}>Yearly</Text>
+                <Text style={[styles.packagePrice, { color: colors.text }]}>
+                  {formatPrice(yearlyPkg)}
+                </Text>
+                <Text style={[styles.packagePeriod, { color: colors.textSecondary }]}>
+                  {getSubscriptionPeriod(yearlyPkg)}
+                </Text>
+              </TouchableOpacity>
+            )}
+            {monthlyPkg && (
+              <TouchableOpacity
+                style={[
+                  styles.packageCard,
+                  { backgroundColor: colors.card },
+                  selectedPackage === monthlyPkg.identifier && styles.packageCardSelected,
+                ]}
+                onPress={() => setSelectedPackage(monthlyPkg.identifier)}
+              >
+                <Text style={[styles.packageTitle, { color: colors.text }]}>Monthly</Text>
+                <Text style={[styles.packagePrice, { color: colors.text }]}>
+                  {formatPrice(monthlyPkg)}
+                </Text>
+                <Text style={[styles.packagePeriod, { color: colors.textSecondary }]}>
+                  {getSubscriptionPeriod(monthlyPkg)}
+                </Text>
+              </TouchableOpacity>
+            )}
+            {lifetimePkg && (
+              <TouchableOpacity
+                style={[
+                  styles.packageCard,
+                  styles.packageCardWide,
+                  { backgroundColor: colors.card },
+                  selectedPackage === lifetimePkg.identifier && styles.packageCardSelected,
+                ]}
+                onPress={() => setSelectedPackage(lifetimePkg.identifier)}
+              >
+                <Text style={[styles.packageTitle, { color: colors.text }]}>Lifetime</Text>
+                <Text style={[styles.packagePrice, { color: colors.text }]}>
+                  {formatPrice(lifetimePkg)}
+                </Text>
+                <Text style={[styles.packagePeriod, { color: colors.textSecondary }]}>
+                  One-time purchase
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {selectedPackage && (
+          <TouchableOpacity
+            style={styles.purchaseButton}
+            onPress={handlePurchase}
+            disabled={subLoading}
+          >
+            {subLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.purchaseButtonText}>Continue</Text>
+            )}
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity style={styles.restoreButton} onPress={handleRestore}>
+          <Text style={[styles.restoreText, { color: colors.textSecondary }]}>
+            Restore Purchases
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.skipPaywallButton}
+          onPress={handleComplete}
+        >
+          <Text style={[styles.skipPaywallText, { color: colors.textSecondary }]}>
+            Maybe later
+          </Text>
+        </TouchableOpacity>
+
+        <Text style={[styles.termsText, { color: colors.textSecondary }]}>
+          Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current period.
+        </Text>
+      </ScrollView>
+    );
+  };
 
   return (
     <View style={[styles.container, {
@@ -159,7 +375,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
     }]}>
       {/* Progress dots */}
       <View style={styles.progressContainer}>
-        {[0, 1, 2].map((i) => (
+        {[0, 1, 2, 3].map((i) => (
           <View
             key={i}
             style={[
@@ -173,6 +389,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
       {step === 0 && renderWelcome()}
       {step === 1 && renderCategories()}
       {step === 2 && renderNotifications()}
+      {step === 3 && renderPaywall()}
     </View>
   );
 };
@@ -250,7 +467,7 @@ const styles = StyleSheet.create({
   },
   categoryChipSelected: {
     borderColor: COLORS.primary,
-    backgroundColor: COLORS.starGlow,
+    backgroundColor: `${COLORS.primary}15`,
   },
   categoryEmoji: {
     fontSize: 18,
@@ -276,7 +493,7 @@ const styles = StyleSheet.create({
   },
   timeChipSelected: {
     borderColor: COLORS.primary,
-    backgroundColor: COLORS.starGlow,
+    backgroundColor: `${COLORS.primary}15`,
   },
   timeLabel: {
     fontSize: FONT_SIZES.md,
@@ -296,7 +513,118 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: FONT_SIZES.lg,
     fontWeight: '600',
-    color: '#3D3D3D',
+    color: '#FFFFFF',
+  },
+  // Paywall step styles
+  paywallHero: {
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  featuresCard: {
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  checkCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: `${COLORS.primary}20`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.md,
+  },
+  featureText: {
+    fontSize: FONT_SIZES.md,
+    flex: 1,
+  },
+  packagesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+    marginBottom: SPACING.lg,
+  },
+  packageCard: {
+    flex: 1,
+    minWidth: '45%',
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    alignItems: 'center',
+  },
+  packageCardSelected: {
+    borderColor: COLORS.primary,
+  },
+  packageCardWide: {
+    width: '100%',
+    flex: undefined,
+  },
+  savingsBadge: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  savingsText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  packageTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: '600',
+    marginBottom: SPACING.xs,
+  },
+  packagePrice: {
+    fontSize: FONT_SIZES.xxl,
+    fontWeight: '700',
+  },
+  packagePeriod: {
+    fontSize: FONT_SIZES.sm,
+    marginTop: SPACING.xs,
+  },
+  purchaseButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.round,
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  purchaseButtonText: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  restoreButton: {
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+  },
+  restoreText: {
+    fontSize: FONT_SIZES.md,
+  },
+  skipPaywallButton: {
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+  },
+  skipPaywallText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: '500',
+  },
+  termsText: {
+    fontSize: FONT_SIZES.xs,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.lg,
   },
 });
 

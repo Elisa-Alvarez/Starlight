@@ -1,32 +1,54 @@
 export const COLORS = {
   // Light mode
   light: {
-    background: '#FFF9F0',
-    backgroundSecondary: '#FFEFD5',
-    text: '#3D3D3D',
+    background: '#FAF8F4',
+    backgroundSecondary: '#F0EDE8',
+    text: '#1A1A1A',
     textSecondary: '#6B6B6B',
     card: '#FFFFFF',
   },
   // Dark mode
   dark: {
-    background: '#1B1E2F',
-    backgroundSecondary: '#252839',
+    background: '#1A1A1A',
+    backgroundSecondary: '#252525',
     text: '#F5F5F0',
     textSecondary: '#A0A0A0',
-    card: '#2D3142',
+    card: '#2A2A2A',
   },
   // Accent colors (same for both modes)
-  primary: '#FFC850',
-  primarySoft: '#FFD88D',
-  accent: '#FFB84D',
+  primary: '#FF5722',
+  primarySoft: '#FF8A65',
+  accent: '#FF7043',
   star: '#FFE4A0',
   starGlow: '#FFF5D6',
+
+  // Pastel accents
+  lavender: '#DBC4F0',
+  coral: '#FFB5A7',
+  mint: '#B5E7DD',
 
   // Utility
   success: '#7CB342',
   error: '#E57373',
   divider: 'rgba(0,0,0,0.08)',
   dividerDark: 'rgba(255,255,255,0.08)',
+};
+
+export const SHADOWS = {
+  card: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  cardLifted: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 6,
+  },
 };
 
 export const SPACING = {
@@ -43,6 +65,7 @@ export const BORDER_RADIUS = {
   md: 12,
   lg: 16,
   xl: 24,
+  xxl: 24,
   round: 9999,
 };
 

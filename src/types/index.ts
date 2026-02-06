@@ -38,6 +38,27 @@ export interface UserSettings {
   onboardingCompleted: boolean;
 }
 
+export interface Favorite {
+  id: string;
+  affirmationId: string;
+  text: string;
+  category: Category;
+  createdAt: string;
+}
+
+export interface StreakData {
+  currentStreak: number;
+  longestStreak: number;
+  viewDates: string[];
+}
+
+export type MainTabParamList = {
+  HomeTab: undefined;
+  FavoritesTab: undefined;
+  ProgressTab: undefined;
+  ProfileTab: undefined;
+};
+
 export type RootStackParamList = {
   Login: undefined;
   Onboarding: undefined;
@@ -47,4 +68,8 @@ export type RootStackParamList = {
   CategoryView: { category: Category };
   Paywall: undefined;
   CustomerCenter: undefined;
+  DailyAffirmation: { categories?: Category[] } | undefined;
+  Customize: undefined;
+  WidgetCustomization: undefined;
+  CreateMix: undefined;
 };

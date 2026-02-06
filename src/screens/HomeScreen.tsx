@@ -1,45 +1,44 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Svg, { Path } from 'react-native-svg';
-import { StarMascot, AffirmationCard } from '../components';
+import { StarMascot } from '../components';
+import { AnimatedPressable, Button, Card } from '../components/ui';
+import { CATEGORIES } from '../data/affirmations';
 import { useStore } from '../store/useStore';
-import { getCategoryById } from '../data/affirmations';
-import { COLORS, SPACING, FONT_SIZES } from '../constants/theme';
-import { RootStackParamList } from '../types';
+import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from '../constants/theme';
+import { MainTabParamList, RootStackParamList, CategoryInfo } from '../types';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const PASTEL_COLORS = [
+  COLORS.lavender,
+  COLORS.coral,
+  COLORS.mint,
+  '#FFE0B2',
+  '#C5CAE9',
+  '#F8BBD0',
+  '#DCEDC8',
+  '#B3E5FC',
+  '#FFD180',
+  '#E1BEE7',
+];
+
+type HomeNavProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabParamList, 'HomeTab'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 interface HomeScreenProps {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'Main'>;
+  navigation: HomeNavProp;
 }
-
-const SettingsIcon = ({ color }: { color: string }) => (
-  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M12 15a3 3 0 100-6 3 3 0 000 6z"
-      stroke={color}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
-      stroke={color}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  const { darkMode, currentAffirmation, initializeAffirmation, getNewAffirmation } = useStore();
+  const { darkMode, selectedCategories } = useStore();
   const colors = darkMode ? COLORS.dark : COLORS.light;
-
-  useEffect(() => {
-    initializeAffirmation();
-  }, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -49,58 +48,80 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     return 'Good night';
   };
 
+  const userCategories = CATEGORIES.filter((c) => selectedCategories.includes(c.id)).slice(0, 4);
+
+  const renderCategoryCard = (category: CategoryInfo, index: number) => {
+    const bgColor = PASTEL_COLORS[index % PASTEL_COLORS.length];
+    return (
+      <AnimatedPressable
+        key={category.id}
+        onPress={() => navigation.navigate('DailyAffirmation', { categories: [category.id] })}
+        style={[styles.forYouCard, { backgroundColor: bgColor + '40' }]}
+      >
+        <Text style={styles.forYouEmoji}>{category.emoji}</Text>
+        <Text style={[styles.forYouName, { color: colors.text }]}>{category.name}</Text>
+      </AnimatedPressable>
+    );
+  };
+
+  const renderExploreCard = (category: CategoryInfo, index: number) => {
+    const bgColor = PASTEL_COLORS[index % PASTEL_COLORS.length];
+    return (
+      <AnimatedPressable
+        key={category.id}
+        onPress={() => navigation.navigate('DailyAffirmation', { categories: [category.id] })}
+        style={[styles.exploreCard, { backgroundColor: bgColor + '30' }]}
+      >
+        <Text style={styles.exploreEmoji}>{category.emoji}</Text>
+        <Text style={[styles.exploreName, { color: colors.text }]}>{category.name}</Text>
+      </AnimatedPressable>
+    );
+  };
+
   return (
-    <View style={[styles.container, {
-      backgroundColor: colors.background,
-      paddingTop: insets.top,
-    }]}>
-      {/* Header */}
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Header */}
         <Text style={[styles.greeting, { color: colors.textSecondary }]}>
           {getGreeting()}
         </Text>
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Settings')}
-          style={styles.settingsButton}
-        >
-          <SettingsIcon color={colors.textSecondary} />
-        </TouchableOpacity>
-      </View>
 
-      {/* Star Mascot */}
-      <View style={styles.mascotContainer}>
-        <StarMascot size={140} />
-      </View>
+        {/* Star Mascot */}
+        <View style={styles.mascotContainer}>
+          <StarMascot size={120} animation="idle" />
+        </View>
 
-      {/* Affirmation */}
-      {currentAffirmation && (
-        <View style={styles.affirmationContainer}>
-          <AffirmationCard
-            affirmation={currentAffirmation}
-            darkMode={darkMode}
+        {/* CTA Button */}
+        <View style={styles.ctaContainer}>
+          <Button
+            title="Create my own mix"
+            onPress={() => navigation.navigate('CreateMix')}
           />
         </View>
-      )}
 
-      {/* See Another Button */}
-      <TouchableOpacity
-        style={styles.anotherButton}
-        onPress={getNewAffirmation}
-      >
-        <Text style={[styles.anotherButtonText, { color: colors.textSecondary }]}>
-          See another →
-        </Text>
-      </TouchableOpacity>
+        {/* For You Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>For you</Text>
+          <View style={styles.forYouGrid}>
+            {userCategories.map((cat, i) => renderCategoryCard(cat, i))}
+          </View>
+        </View>
 
-      {/* Browse Link */}
-      <TouchableOpacity
-        style={styles.browseLink}
-        onPress={() => navigation.navigate('Browse')}
-      >
-        <Text style={[styles.browseLinkText, { color: COLORS.primary }]}>
-          Browse all affirmations
-        </Text>
-      </TouchableOpacity>
+        {/* Explore Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Explore</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.exploreScroll}
+          >
+            {CATEGORIES.map((cat, i) => renderExploreCard(cat, i))}
+          </ScrollView>
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -109,45 +130,77 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+  scrollContent: {
+    paddingBottom: SPACING.xxl,
   },
   greeting: {
     fontSize: FONT_SIZES.lg,
     fontWeight: '500',
-  },
-  settingsButton: {
-    padding: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
   },
   mascotContainer: {
     alignItems: 'center',
     paddingVertical: SPACING.lg,
   },
-  affirmationContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  ctaContainer: {
+    paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
-  anotherButton: {
-    alignSelf: 'center',
-    paddingVertical: SPACING.md,
+  section: {
+    marginBottom: SPACING.lg,
+  },
+  sectionTitle: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: '700',
     paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.md,
   },
-  anotherButtonText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '500',
+  forYouGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: SPACING.lg,
+    gap: SPACING.sm,
   },
-  browseLink: {
-    alignSelf: 'center',
-    paddingVertical: SPACING.lg,
-    paddingBottom: SPACING.xxl,
+  forYouCard: {
+    width: (SCREEN_WIDTH - SPACING.lg * 2 - SPACING.sm) / 2,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 100,
+    ...SHADOWS.card,
   },
-  browseLinkText: {
-    fontSize: FONT_SIZES.md,
+  forYouEmoji: {
+    fontSize: 32,
+    marginBottom: SPACING.sm,
+  },
+  forYouName: {
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
+    textAlign: 'center',
+  },
+  exploreScroll: {
+    paddingHorizontal: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  exploreCard: {
+    width: 120,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 100,
+    ...SHADOWS.card,
+  },
+  exploreEmoji: {
+    fontSize: 28,
+    marginBottom: SPACING.xs,
+  },
+  exploreName: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

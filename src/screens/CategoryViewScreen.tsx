@@ -12,7 +12,7 @@ import { RouteProp } from '@react-navigation/native';
 import Svg, { Path } from 'react-native-svg';
 import { getCategoryById, getAffirmationsByCategory } from '../data/affirmations';
 import { useStore } from '../store/useStore';
-import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../constants/theme';
+import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 import { RootStackParamList, Affirmation } from '../types';
 
 interface CategoryViewScreenProps {
@@ -136,8 +136,9 @@ const styles = StyleSheet.create({
   },
   affirmationCard: {
     padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
+    borderRadius: BORDER_RADIUS.xl,
     marginBottom: SPACING.sm,
+    ...SHADOWS.card,
   },
   affirmationText: {
     fontSize: FONT_SIZES.lg,

@@ -166,7 +166,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
                 <Text style={styles.upgradeTitle}>Upgrade to Pro ✨</Text>
                 <Text style={styles.upgradeSubtitle}>Unlock all features</Text>
               </View>
-              <ChevronIcon color="#3D3D3D" />
+              <ChevronIcon color="#FFFFFF" />
             </TouchableOpacity>
           )}
         </View>
@@ -456,11 +456,11 @@ const styles = StyleSheet.create({
   upgradeTitle: {
     fontSize: FONT_SIZES.md,
     fontWeight: '600',
-    color: '#3D3D3D',
+    color: '#FFFFFF',
   },
   upgradeSubtitle: {
     fontSize: FONT_SIZES.sm,
-    color: '#3D3D3D',
+    color: '#FFFFFF',
     opacity: 0.8,
     marginTop: 2,
   },

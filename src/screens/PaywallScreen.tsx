@@ -265,7 +265,7 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({ navigation }) => {
           disabled={!selectedPackage || isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator color="#3D3D3D" />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
             <Text style={styles.purchaseButtonText}>
               {selectedPackage ? 'Continue' : 'Select a plan'}
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
   savingsText: {
     fontSize: FONT_SIZES.xs,
     fontWeight: '700',
-    color: '#3D3D3D',
+    color: '#FFFFFF',
   },
   lifetimeBadge: {
     backgroundColor: '#4CAF50',
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
   purchaseButtonText: {
     fontSize: FONT_SIZES.lg,
     fontWeight: '600',
-    color: '#3D3D3D',
+    color: '#FFFFFF',
   },
   restoreButton: {
     alignItems: 'center',
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: FONT_SIZES.lg,
     fontWeight: '600',
-    color: '#3D3D3D',
+    color: '#FFFFFF',
   },
 });
 
