@@ -1,5 +1,5 @@
 import { pgTable, text, boolean, integer, timestamp } from 'drizzle-orm/pg-core';
-import { categories } from './categories';
+import { categories } from './categories.js';
 
 export const affirmations = pgTable('affirmations', {
   id: text('id').primaryKey(),

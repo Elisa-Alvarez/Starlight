@@ -1,5 +1,5 @@
 import { pgTable, text, timestamp, uuid, boolean, decimal, jsonb } from 'drizzle-orm/pg-core';
-import { userProfiles } from './users';
+import { userProfiles } from './users.js';
 
 export const subscriptionEvents = pgTable('subscription_events', {
   id: uuid('id').primaryKey().defaultRandom(),

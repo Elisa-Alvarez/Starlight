@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { userProfiles } from './users';
-import { affirmations } from './affirmations';
+import { userProfiles } from './users.js';
+import { affirmations } from './affirmations.js';
 
 export const affirmationViews = pgTable('affirmation_views', {
   id: uuid('id').primaryKey().defaultRandom(),
