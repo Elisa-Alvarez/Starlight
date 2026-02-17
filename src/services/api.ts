@@ -37,7 +37,6 @@ class ApiClient {
     const url = `${this.baseUrl}${endpoint}`;
 
     const headers: HeadersInit = {
-      'ngrok-skip-browser-warning': 'true',
       ...options.headers,
     };
 

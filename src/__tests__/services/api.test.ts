@@ -31,9 +31,7 @@ describe('ApiClient', () => {
       'http://test-api.com/api/test',
       expect.objectContaining({
         method: 'GET',
-        headers: expect.objectContaining({
-          'ngrok-skip-browser-warning': 'true',
-        }),
+        headers: expect.objectContaining({}),
       }),
     );
     expect(result.success).toBe(true);
