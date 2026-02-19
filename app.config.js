@@ -45,6 +45,9 @@ export default {
       ],
     ],
     extra: {
+      eas: {
+        projectId: 'd0bd808f-a64a-4ce5-8c18-97727c03d92c',
+      },
       // RevenueCat API Keys
       revenueCatApiKeyApple: process.env.REVENUECAT_API_KEY_APPLE,
       revenueCatApiKeyGoogle: process.env.REVENUECAT_API_KEY_GOOGLE,
