@@ -28,6 +28,9 @@ export default {
       package: 'com.starlight.affirmations',
       edgeToEdgeEnabled: true,
     },
+    updates: {
+      enabled: false,
+    },
     web: {
       favicon: './assets/favicon.png',
       bundler: 'metro',
