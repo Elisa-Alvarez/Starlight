@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Path } from 'react-native-svg';
 import { AnimatedPressable, Card, Button } from '../components/ui';
 import { useStore } from '../store/useStore';
+import { useDailyAffirmations } from '../hooks/useAffirmations';
+import { useWidgetAccess } from '../hooks/useWidgetAccess';
+import { syncAffirmationToWidget } from '../utils/widgetBridge';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../constants/theme';
 import { RootStackParamList } from '../types';
+
+const FALLBACK_TEXT = 'Your light is always with you ✨';
 
 interface WidgetCustomizationScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList, 'WidgetCustomization'>;
@@ -24,6 +29,20 @@ const BackIcon = ({ color }: { color: string }) => (
   </Svg>
 );
 
+const LockIcon = ({ color }: { color: string }) => (
+  <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2zM7 11V7a5 5 0 0110 0v4"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
+
 const BG_OPTIONS = [
   { id: 'white', color: '#FFFFFF', label: 'White' },
   { id: 'cream', color: '#FAF8F4', label: 'Cream' },
@@ -39,20 +58,79 @@ const FONT_OPTIONS = [
   { id: 'large', size: 18, label: 'Large' },
 ];
 
+const SYNC_DOT_COLORS: Record<SyncStatus, string> = {
+  idle: '#A0A0A0',
+  syncing: '#F5A623',
+  synced: '#4CAF50',
+  error: '#FF3B30',
+};
+
+const SYNC_LABELS: Record<SyncStatus, string> = {
+  idle: 'Tap Save to sync',
+  syncing: 'Syncing...',
+  synced: 'Synced with widget',
+  error: 'Sync failed — try again',
+};
+
 export const WidgetCustomizationScreen: React.FC<WidgetCustomizationScreenProps> = ({
   navigation,
 }) => {
   const insets = useSafeAreaInsets();
-  const { darkMode } = useStore();
+  const { darkMode, currentAffirmation } = useStore();
   const colors = darkMode ? COLORS.dark : COLORS.light;
+  const { canAccessWidget, promptUpgrade } = useWidgetAccess();
+  const { data: dailyData } = useDailyAffirmations();
 
   const [selectedBg, setSelectedBg] = useState('cream');
   const [selectedFont, setSelectedFont] = useState('medium');
   const [textSource, setTextSource] = useState<'daily' | 'custom'>('daily');
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
 
   const activeBg = BG_OPTIONS.find((b) => b.id === selectedBg)!;
   const activeFont = FONT_OPTIONS.find((f) => f.id === selectedFont)!;
   const isDarkBg = selectedBg === 'dark';
+
+  const handleSave = async () => {
+    const affirmationText =
+      dailyData?.affirmations?.[0]?.text ??
+      currentAffirmation?.text ??
+      FALLBACK_TEXT;
+
+    setSyncStatus('syncing');
+    await syncAffirmationToWidget(affirmationText);
+    setSyncStatus('synced');
+  };
+
+  // Subscription gate — show locked state for free users
+  if (!canAccessWidget) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <AnimatedPressable onPress={() => navigation.goBack()} style={styles.backButton}>
+            <BackIcon color={colors.text} />
+          </AnimatedPressable>
+          <Text style={[styles.title, { color: colors.text }]}>Widget</Text>
+          <View style={styles.placeholder} />
+        </View>
+        <View style={styles.lockedContainer}>
+          <View style={[styles.lockedCard, { backgroundColor: colors.card }]}>
+            <LockIcon color={colors.textSecondary} />
+            <Text style={[styles.lockedTitle, { color: colors.text }]}>
+              Widget is a Pro feature
+            </Text>
+            <Text style={[styles.lockedSubtitle, { color: colors.textSecondary }]}>
+              See your daily affirmation on your home screen without opening the app.
+            </Text>
+            <Button
+              title="Upgrade to Pro"
+              onPress={promptUpgrade}
+              style={styles.upgradeButton}
+            />
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -100,6 +178,14 @@ export const WidgetCustomizationScreen: React.FC<WidgetCustomizationScreenProps>
               Starlight
             </Text>
           </View>
+        </View>
+
+        {/* Sync Status */}
+        <View style={styles.syncRow}>
+          <View style={[styles.syncDot, { backgroundColor: SYNC_DOT_COLORS[syncStatus] }]} />
+          <Text style={[styles.syncLabel, { color: colors.textSecondary }]}>
+            {SYNC_LABELS[syncStatus]}
+          </Text>
         </View>
 
         {/* Text Source */}
@@ -199,7 +285,42 @@ export const WidgetCustomizationScreen: React.FC<WidgetCustomizationScreenProps>
           </View>
         </View>
 
-        <Button title="Save" onPress={() => navigation.goBack()} style={styles.saveButton} />
+        <Button title="Save" onPress={handleSave} style={styles.saveButton} />
+
+        {/* Platform setup guide */}
+        <View style={[styles.setupGuide, { backgroundColor: colors.card }]}>
+          <Text style={[styles.setupTitle, { color: colors.text }]}>
+            How to add the widget
+          </Text>
+          {Platform.OS === 'ios' ? (
+            <View style={styles.setupSteps}>
+              <Text style={[styles.setupStep, { color: colors.textSecondary }]}>
+                1. Long press your home screen
+              </Text>
+              <Text style={[styles.setupStep, { color: colors.textSecondary }]}>
+                2. Tap the + button in the top corner
+              </Text>
+              <Text style={[styles.setupStep, { color: colors.textSecondary }]}>
+                3. Search for "Starlight"
+              </Text>
+              <Text style={[styles.setupStep, { color: colors.textSecondary }]}>
+                4. Tap "Add Widget"
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.setupSteps}>
+              <Text style={[styles.setupStep, { color: colors.textSecondary }]}>
+                1. Long press your home screen
+              </Text>
+              <Text style={[styles.setupStep, { color: colors.textSecondary }]}>
+                2. Tap "Widgets"
+              </Text>
+              <Text style={[styles.setupStep, { color: colors.textSecondary }]}>
+                3. Find "Starlight" and drag it to your home screen
+              </Text>
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -226,12 +347,40 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 40,
   },
+  // Locked state
+  lockedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+  },
+  lockedCard: {
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.xl,
+    alignItems: 'center',
+    width: '100%',
+    gap: SPACING.md,
+  },
+  lockedTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  lockedSubtitle: {
+    fontSize: FONT_SIZES.sm,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  upgradeButton: {
+    width: '100%',
+    marginTop: SPACING.sm,
+  },
   scrollContent: {
     paddingHorizontal: SPACING.lg,
     paddingBottom: SPACING.xxl,
   },
   previewSection: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.md,
   },
   sectionLabel: {
     fontSize: FONT_SIZES.sm,
@@ -261,6 +410,21 @@ const styles = StyleSheet.create({
   widgetBranding: {
     fontSize: FONT_SIZES.xs,
     fontWeight: '500',
+  },
+  // Sync status
+  syncRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    marginBottom: SPACING.lg,
+  },
+  syncDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  syncLabel: {
+    fontSize: FONT_SIZES.sm,
   },
   section: {
     marginBottom: SPACING.lg,
@@ -302,6 +466,24 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: SPACING.md,
+    marginBottom: SPACING.lg,
+  },
+  // Setup guide
+  setupGuide: {
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+  },
+  setupTitle: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '600',
+    marginBottom: SPACING.sm,
+  },
+  setupSteps: {
+    gap: SPACING.xs,
+  },
+  setupStep: {
+    fontSize: FONT_SIZES.sm,
+    lineHeight: 20,
   },
 });
 

@@ -63,7 +63,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
     notificationTimes,
     toggleNotificationTime,
   } = useStore();
-  const { isPro } = useSubscriptionStore();
+  const { isPro, hasAccess } = useSubscriptionStore();
   const { signOut, isAuthenticated, user } = useAuthStore();
 
   const colors = darkMode ? COLORS.dark : COLORS.light;
@@ -190,6 +190,42 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
                 thumbColor="#FFFFFF"
               />
             </View>
+          </View>
+        </View>
+
+        {/* Widget */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+            Widget
+          </Text>
+          <View style={[styles.card, { backgroundColor: colors.card }]}>
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={() =>
+                hasAccess
+                  ? navigation.navigate('WidgetCustomization')
+                  : navigation.navigate('Paywall', { dismissable: true })
+              }
+            >
+              <View style={styles.widgetRowLeft}>
+                <View>
+                  <View style={styles.widgetLabelRow}>
+                    <Text style={[styles.settingLabel, { color: colors.text }]}>
+                      Home Screen Widget
+                    </Text>
+                    {!hasAccess && (
+                      <View style={styles.proBadgeSmall}>
+                        <Text style={styles.proBadgeSmallText}>PRO</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
+                    See today's affirmation without opening the app
+                  </Text>
+                </View>
+              </View>
+              <ChevronIcon color={colors.textSecondary} />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -515,6 +551,26 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     marginBottom: SPACING.sm,
     marginLeft: SPACING.xs,
+  },
+  widgetRowLeft: {
+    flex: 1,
+    marginRight: SPACING.sm,
+  },
+  widgetLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  proBadgeSmall: {
+    backgroundColor: `${COLORS.primary}20`,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  proBadgeSmallText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: '700',
+    color: COLORS.primary,
   },
 });
 
