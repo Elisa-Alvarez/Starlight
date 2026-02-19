@@ -30,6 +30,7 @@ export default {
     },
     updates: {
       enabled: false,
+      checkAutomatically: 'NEVER',
     },
     web: {
       favicon: './assets/favicon.png',
